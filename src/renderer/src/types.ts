@@ -1,0 +1,237 @@
+import type { MenuItem, MenuItemConstructorOptions } from 'electron';
+import { z } from '../../common/zod';
+import type { FFprobeChapter, FFprobeFormat, FFprobeStream } from '../../common/ffprobe';
+import type { FileStream } from './ffmpeg';
+
+
+export interface ChromiumHTMLVideoElement extends HTMLVideoElement {
+  videoTracks?: { id: string, selected: boolean }[]
+}
+export interface ChromiumHTMLAudioElement extends HTMLAudioElement {
+  audioTracks?: { id: string, enabled: boolean }[]
+}
+
+export const openFilesActionArgsSchema = z.tuple([z.string().array()]);
+export type OpenFilesActionArgs = z.infer<typeof openFilesActionArgsSchema>
+
+export const goToTimecodeDirectArgsSchema = z.tuple([z.object({ time: z.string() })]);
+export type GoToTimecodeDirectArgs = z.infer<typeof goToTimecodeDirectArgsSchema>
+
+export const awaitEventArgsSchema = z.tuple([z.object({ eventName: z.string() })]);
+export type AwaitEventArgs = z.infer<typeof awaitEventArgsSchema>;
+
+export const segmentTagsSchema = z.record(z.string(), z.string());
+
+export type SegmentTags = z.infer<typeof segmentTagsSchema>
+
+export type EditingSegmentTags = Record<string, SegmentTags>
+
+// todo remove some time in the future
+export const llcProjectV1Schema = z.object({
+  version: z.literal(1),
+  mediaFileName: z.string().optional(),
+  cutSegments: z.object({
+    start: z.number().optional(),
+    end: z.number().optional(),
+    name: z.string(),
+    tags: segmentTagsSchema.optional(),
+  }).array(),
+});
+
+export const llcProjectV2Schema = z.object({
+  version: z.literal(2),
+  mediaFileName: z.string().optional(),
+  cutSegments: z.object({
+    start: z.number(),
+    end: z.number().optional(),
+    name: z.string(),
+    tags: segmentTagsSchema.optional(),
+    selected: z.boolean().optional(),
+    actionType: z.string().optional(),
+    actionLabel: z.string().optional(),
+    playerName: z.string().optional(),
+    isFavorite: z.boolean().optional(),
+    isUncertain: z.boolean().optional(),
+    zoomAnchors: z.object({
+      t: z.number(),
+      rect: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }),
+    }).array().optional(),
+    zoomEase: z.enum(['smooth', 'linear', 'dynamic']).optional(),
+    spotMark: z.object({ t: z.number(), x: z.number(), y: z.number(), size: z.number() }).optional(),
+  }).array(),
+});
+
+export type LlcProject = z.infer<typeof llcProjectV2Schema>
+
+export interface SegmentBase {
+  start: number,
+  end?: number | undefined,
+  name?: string | undefined,
+}
+
+export interface DefiniteSegmentBase {
+  start: number,
+  end: number,
+}
+
+export interface SegmentColorIndex {
+  segColorIndex: number,
+}
+
+/**
+ * A region of the video picture, normalized to 0..1 of the full frame
+ * (x/y = top-left corner, w/h = size). Resolution independent, so it survives
+ * proxy files and different encodes of the same video.
+ */
+export interface ZoomRect {
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+}
+
+/**
+ * A zoom anchor: at source time `t` (seconds, absolute in the video) the picture shows `rect`.
+ * Between two anchors the zoom glides smoothly; before the first / after the last it holds.
+ * A clip with a single anchor has a fixed zoom for its whole length.
+ */
+export interface ZoomAnchor {
+  t: number,
+  rect: ZoomRect,
+}
+
+/**
+ * A player lock on a clip: at source time `t` the picture freezes and a ring with the player's name
+ * is drawn at (x, y) — fractions of the picture (0-1). `size` is the ring radius as a fraction of the picture height.
+ */
+export interface SpotMark {
+  t: number,
+  x: number,
+  y: number,
+  size: number,
+}
+
+export interface StateSegment extends SegmentBase, SegmentColorIndex {
+  name: string;
+  segId: string;
+  tags?: SegmentTags | undefined;
+  initial?: true,
+  selected: boolean,
+  // Soccer clip metadata
+  actionType?: string | undefined;
+  actionLabel?: string | undefined;
+  playerName?: string | undefined;
+  isFavorite?: boolean | undefined;
+  isUncertain?: boolean | undefined;
+  /** Zoom anchors on this clip (sorted by time) — the player follows them and the export renders them. */
+  zoomAnchors?: ZoomAnchor[] | undefined;
+  /** How the zoom glides between anchors (default smooth) */
+  zoomEase?: 'smooth' | 'linear' | 'dynamic' | undefined;
+  /** Player lock: freeze + ring + name at one moment of the clip */
+  spotMark?: SpotMark | undefined;
+}
+
+export interface SegmentToExport extends DefiniteSegmentBase {
+  originalIndex: number,
+  name?: string | undefined;
+  tags?: SegmentTags | undefined;
+}
+
+export interface InverseCutSegment extends DefiniteSegmentBase {
+  segId: string;
+}
+
+
+export type PlaybackMode = 'loop-segment-start-end' | 'loop-segment' | 'play-segment-once' | 'play-selected-segments' | 'loop-selected-segments';
+
+export type EdlFileType = 'llc' | 'csv' | 'csv-frames' | 'cutlist' | 'xmeml' | 'fcpxml' | 'dv-analyzer-summary-txt' | 'cue' | 'pbf' | 'edl' | 'srt' | 'otio';
+
+export type EdlImportType = 'youtube' | EdlFileType;
+
+export type EdlExportType = 'csv' | 'tsv-human' | 'csv-human' | 'csv-frames' | 'srt' | 'llc';
+
+export type TunerType = 'wheelSensitivity' | 'waveformHeight' | 'keyboardNormalSeekSpeed' | 'keyboardSeekSpeed2' | 'keyboardSeekSpeed3' | 'keyboardSeekAccFactor';
+
+export interface WaveformBase {
+  createdAt: Date,
+}
+
+export interface WaveformSlice extends WaveformBase {
+  from: number,
+  to: number,
+  duration: number,
+  url?: string, // undefined while rendering
+  failed?: true, // if failed to render
+}
+
+export interface OverviewWaveform extends WaveformBase {
+  url: string,
+}
+
+export type RenderableWaveform = WaveformSlice | OverviewWaveform;
+
+export type FfmpegCommandLog = { command: string, time: Date }[];
+
+export interface Thumbnail {
+  time: number
+  url: string
+}
+
+export type FormatTimecode = (a: { seconds: number, shorten?: boolean | undefined, fileNameFriendly?: boolean | undefined }) => string;
+export type ParseTimecode = (val: string) => number | undefined;
+
+export type GetFrameCount = (sec: number) => number | undefined;
+
+export type UpdateSegAtIndex = (index: number, newProps: Partial<StateSegment>) => void;
+
+export type ContextMenuTemplate = (MenuItemConstructorOptions | MenuItem)[];
+
+export type ExportMode = 'segments_to_chapters' | 'merge' | 'merge+separate' | 'separate';
+
+export type FilesMeta = Record<string, {
+  streams: FileStream[];
+  format: FFprobeFormat;
+  chapters: FFprobeChapter[];
+}>
+
+export type CopyfileStreams = {
+  path: string;
+  streamIds: number[];
+}[]
+
+export interface Chapter { start: number, end: number, name?: string | undefined }
+
+export type LiteFFprobeStream = Pick<FFprobeStream, 'index' | 'codec_type' | 'codec_tag' | 'codec_name' | 'disposition' | 'tags' | 'sample_rate' | 'time_base'>;
+
+export interface FileStats {
+  size: number | bigint,
+  atime: number,
+  mtime: number,
+  ctime: number,
+  birthtime: number,
+}
+
+export type AllFilesMeta = Record<string, {
+  streams: LiteFFprobeStream[];
+  format: FFprobeFormat;
+  chapters: FFprobeChapter[];
+}>
+
+export type CustomTagsByFile = Record<string, Record<string, string>>;
+
+export interface StreamParams {
+  customTags?: Record<string, string>,
+  disposition?: string,
+  bsfH264Mp4toannexb?: boolean,
+  bsfHevcMp4toannexb?: boolean,
+  bsfHevcAudInsert?: boolean,
+  tag?: string | undefined,
+}
+export type ParamsByStreamId = Map<string, Map<number, StreamParams>>;
+
+export interface BatchFile {
+  path: string,
+  name: string,
+}
+
+export type KeyboardLayoutMap = Map<string, string>;

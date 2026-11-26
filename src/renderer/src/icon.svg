@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background gradient: deep dark navy -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <!-- Cyan-to-indigo accent gradient -->
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <!-- Glow filter for the cut mark -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Subtle inner glow on film strips -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background: rounded square -->
+  <rect width="512" height="512" rx="110" ry="110" fill="url(#bgGrad)"/>
+
+  <!-- Subtle background vignette shine -->
+  <radialGradient id="shine" cx="50%" cy="30%" r="55%" gradientUnits="objectBoundingBox">
+    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.04"/>
+    <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="512" height="512" rx="110" ry="110" fill="url(#shine)"/>
+
+  <!-- === LEFT FILM STRIP === -->
+  <!-- Outer frame -->
+  <rect x="62" y="126" width="156" height="260" rx="18" ry="18"
+        stroke="url(#accentGrad)" stroke-width="10" fill="none" filter="url(#softGlow)"/>
+  <!-- Left perforations -->
+  <rect x="74" y="148" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="74" y="198" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="74" y="248" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="74" y="298" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="74" y="348" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <!-- Right perforations (inner side of left strip) -->
+  <rect x="178" y="148" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="178" y="198" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="178" y="248" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="178" y="298" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="178" y="348" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+
+  <!-- === RIGHT FILM STRIP === -->
+  <!-- Outer frame -->
+  <rect x="294" y="126" width="156" height="260" rx="18" ry="18"
+        stroke="url(#accentGrad)" stroke-width="10" fill="none" filter="url(#softGlow)"/>
+  <!-- Left perforations (inner side of right strip) -->
+  <rect x="306" y="148" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="306" y="198" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="306" y="248" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="306" y="298" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="306" y="348" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <!-- Right perforations -->
+  <rect x="410" y="148" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="410" y="198" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="410" y="248" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="410" y="298" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+  <rect x="410" y="348" width="28" height="28" rx="5" fill="url(#accentGrad)" opacity="0.75"/>
+
+  <!-- === CENTER CUT MARK === -->
+  <!-- Horizontal cut line -->
+  <line x1="218" y1="256" x2="294" y2="256"
+        stroke="url(#accentGrad)" stroke-width="14" stroke-linecap="round" filter="url(#glow)"/>
+
+  <!-- Diamond / cut marker in center -->
+  <!-- Outer glow diamond -->
+  <rect x="238" y="238" width="36" height="36" rx="6" ry="6"
+        transform="rotate(45 256 256)"
+        fill="url(#accentGrad)" opacity="0.3" filter="url(#glow)"/>
+  <!-- Main diamond -->
+  <rect x="240" y="240" width="32" height="32" rx="5" ry="5"
+        transform="rotate(45 256 256)"
+        fill="url(#accentGrad)" filter="url(#glow)"/>
+</svg>

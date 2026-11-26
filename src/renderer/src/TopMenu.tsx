@@ -1,0 +1,127 @@
+import type { CSSProperties, ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
+import { IoIosSettings } from 'react-icons/io';
+import { FaLock, FaMoon, FaSun, FaUnlock } from 'react-icons/fa';
+import { FaScissors } from 'react-icons/fa6';
+import { useTranslation } from 'react-i18next';
+import Button from './components/Button';
+
+import ExportModeButton from './components/ExportModeButton';
+
+import { primaryTextColor, controlsBackground, darkModeTransition } from './colors';
+import useUserSettings from './hooks/useUserSettings';
+import styles from './TopMenu.module.css';
+import OutDirSelector from './components/OutDirSelector';
+
+
+const { stat } = window.require('fs/promises');
+const { webUtils } = window.require('electron');
+
+const outFmtStyle = { maxWidth: 100 };
+const exportModeStyle = { flexGrow: 0, flexBasis: 140 };
+
+function TopMenu({
+  filePath,
+  fileFormat,
+  renderOutFmt,
+  toggleSettings,
+  openPluginDialog,
+  selectedSegments,
+  isCustomFormatSelected,
+  toggleDarkMode,
+}: {
+  filePath: string | undefined,
+  fileFormat: string | undefined,
+  renderOutFmt: (style: CSSProperties) => ReactNode,
+  toggleSettings: () => void,
+  openPluginDialog: () => void,
+  selectedSegments: unknown[],
+  isCustomFormatSelected: boolean,
+  toggleDarkMode: () => void,
+}) {
+  const { t } = useTranslation();
+  const { customOutDir, setCustomOutDir, simpleMode, outFormatLocked, setOutFormatLocked, darkMode } = useUserSettings();
+  const workingDirButtonRef = useRef<HTMLButtonElement>(null);
+
+  const DarkMode = darkMode ? FaSun : FaMoon;
+
+  const onOutFormatLockedClick = useCallback(() => setOutFormatLocked((v) => (v ? undefined : fileFormat)), [fileFormat, setOutFormatLocked]);
+
+  const showClearWorkingDirButton = !!customOutDir;
+
+  function renderFormatLock() {
+    const Icon = outFormatLocked ? FaLock : FaUnlock;
+    return (
+      <Button style={{ marginRight: '.7em' }}>
+        <Icon onClick={onOutFormatLockedClick} title={t('Lock/unlock output format')} style={{ fontSize: '.8em', color: outFormatLocked ? primaryTextColor : undefined }} />
+      </Button>
+    );
+  }
+
+  // Convenience for drag and drop: https://github.com/mifi/lossless-cut/issues/2147
+  useEffect(() => {
+    async function onDrop(ev: DragEvent) {
+      ev.preventDefault();
+      if (!ev.dataTransfer) return;
+      const paths = [...ev.dataTransfer.files].map((f) => webUtils.getPathForFile(f));
+      const [firstPath] = paths;
+      if (paths.length === 1 && firstPath && (await stat(firstPath)).isDirectory()) {
+        setCustomOutDir(firstPath);
+      }
+    }
+    const element = workingDirButtonRef.current;
+    element?.addEventListener('drop', onDrop);
+    return () => element?.removeEventListener('drop', onDrop);
+  }, [setCustomOutDir]);
+
+  return (
+    <div
+      className={`no-user-select ${styles['wrapper']}`}
+      style={{ background: controlsBackground, transition: darkModeTransition, display: 'flex', alignItems: 'center', padding: '.3em .3em', gap: '.3em', justifyContent: 'space-between', flexWrap: 'wrap' }}
+    >
+      {filePath && (
+        <span style={{ fontWeight: 600, color: 'var(--gray-11)', fontSize: '.95em', paddingLeft: '.3em', display: 'inline-flex', alignItems: 'center', gap: '.45em' }}>
+          <FaScissors aria-hidden /> TrimOut
+        </span>
+      )}
+
+      <div style={{ flexGrow: 1 }} />
+
+      {!simpleMode && (
+        <OutDirSelector>
+          <Button
+            ref={workingDirButtonRef}
+            title={customOutDir}
+            style={{ paddingLeft: showClearWorkingDirButton ? '.4em' : undefined }}
+          >
+            {customOutDir ? t('Working dir set') : t('Working dir unset')}
+          </Button>
+        </OutDirSelector>
+      )}
+
+      {!simpleMode && renderOutFmt(outFmtStyle)}
+
+      {!simpleMode && (isCustomFormatSelected || outFormatLocked) && renderFormatLock()}
+
+      {filePath && !simpleMode && (
+        <ExportModeButton selectedSegments={selectedSegments} style={exportModeStyle} />
+      )}
+
+      {!simpleMode && (
+        <Button onClick={toggleDarkMode} title={t('Toggle dark mode')}>
+          <DarkMode style={{ verticalAlign: 'middle', fontSize: '.9em' }} />
+        </Button>
+      )}
+
+      <Button onClick={openPluginDialog} title="Install the Pro plugin: player spotlight, name card, sounds and music" style={{ fontWeight: 700 }}>
+        Pro plugin
+      </Button>
+
+      <Button onClick={toggleSettings}>
+        <IoIosSettings style={{ fontSize: '1em', verticalAlign: 'bottom' }} />
+      </Button>
+    </div>
+  );
+}
+
+export default memo(TopMenu);
